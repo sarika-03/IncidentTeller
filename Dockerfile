@@ -26,7 +26,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 FROM alpine:latest
 
 # Install runtime dependencies
-RUN apk --no-cache add ca-certificates tzdata sqlite
+RUN apk --no-cache add ca-certificates tzdata sqlite wget
 
 # Create non-root user
 RUN addgroup -g 1001 -S incident && \

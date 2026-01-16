@@ -1,0 +1,45 @@
+# Binaries
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+incident-teller
+incident-teller-*
+
+# Databases
+*.db
+*.db-shm
+*.db-wal
+
+# Configs (except example)
+config.yaml
+config.*.yaml
+!config.example.yaml
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage.out
+coverage.html
+
+# Dependencies
+vendor/
+
+# Development
+dev.db
+tmp/
+temp/

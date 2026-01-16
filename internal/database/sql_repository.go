@@ -22,6 +22,7 @@ func NewSQLRepository(db *sql.DB) *SQLRepository {
 
 // Init initializes database tables
 func (r *SQLRepository) Init(ctx context.Context) error {
+	// Create tables first
 	queries := []string{
 		`CREATE TABLE IF NOT EXISTS alerts (
 			id TEXT PRIMARY KEY,
@@ -37,11 +38,7 @@ func (r *SQLRepository) Init(ctx context.Context) error {
 			description TEXT,
 			resource_type TEXT NOT NULL,
 			labels TEXT,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			INDEX idx_external_id (external_id),
-			INDEX idx_occurred_at (occurred_at),
-			INDEX idx_host (host),
-			INDEX idx_resource_type (resource_type)
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE TABLE IF NOT EXISTS incidents (
 			id TEXT PRIMARY KEY,
@@ -50,10 +47,7 @@ func (r *SQLRepository) Init(ctx context.Context) error {
 			started_at TIMESTAMP NOT NULL,
 			resolved_at TIMESTAMP,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			INDEX idx_status (status),
-			INDEX idx_started_at (started_at),
-			INDEX idx_resolved_at (resolved_at)
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE TABLE IF NOT EXISTS incident_alerts (
 			incident_id TEXT NOT NULL,
@@ -62,16 +56,25 @@ func (r *SQLRepository) Init(ctx context.Context) error {
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (incident_id, alert_id),
 			FOREIGN KEY (incident_id) REFERENCES incidents(id) ON DELETE CASCADE,
-			FOREIGN KEY (alert_id) REFERENCES alerts(id) ON DELETE CASCADE,
-			INDEX idx_incident_id (incident_id),
-			INDEX idx_alert_id (alert_id),
-			INDEX idx_sequence_order (sequence_order)
+			FOREIGN KEY (alert_id) REFERENCES alerts(id) ON DELETE CASCADE
 		)`,
 		`CREATE TABLE IF NOT EXISTS metadata (
 			key TEXT PRIMARY KEY,
 			value TEXT NOT NULL,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
+
+		// Create indexes separately
+		`CREATE INDEX IF NOT EXISTS idx_alerts_external_id ON alerts(external_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_alerts_occurred_at ON alerts(occurred_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_alerts_host ON alerts(host)`,
+		`CREATE INDEX IF NOT EXISTS idx_alerts_resource_type ON alerts(resource_type)`,
+		`CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status)`,
+		`CREATE INDEX IF NOT EXISTS idx_incidents_started_at ON incidents(started_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_incidents_resolved_at ON incidents(resolved_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_incident_alerts_incident_id ON incident_alerts(incident_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_incident_alerts_alert_id ON incident_alerts(alert_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_incident_alerts_sequence_order ON incident_alerts(sequence_order)`,
 	}
 
 	for _, query := range queries {

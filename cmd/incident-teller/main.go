@@ -92,10 +92,10 @@ func main() {
 
 		// Initialize SQL repository
 		sqlRepo := database.NewSQLRepository(db)
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
+		initCtx, initCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer initCancel()
 
-		if err := sqlRepo.Init(ctx); err != nil {
+		if err := sqlRepo.Init(initCtx); err != nil {
 			logger.Fatal("Failed to initialize database", observability.Error(err))
 		}
 
