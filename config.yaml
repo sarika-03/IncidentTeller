@@ -9,12 +9,21 @@ server:
   idle_timeout: "120s"
 
 netdata:
+  # Local Netdata Agent (default)
+  cloud_enabled: false
   base_url: "http://localhost:19999"
+  hostname: "localhost"
+  
+  # OR Netdata Cloud (uncomment to use)
+  # cloud_enabled: true
+  # cloud_token: "your-netdata-cloud-token-here"
+  # cloud_space: "your-space-id"
+  # cloud_rooms: ["room-id-1", "room-id-2"]  # Optional: specific rooms
+  
   timeout: "30s"
   retry_count: 3
   retry_delay: "1s"
   poll_interval: "10s"
-  hostname: "localhost"
   batch_size: 100
 
 ai:

@@ -19,6 +19,7 @@ import (
 	"incident-teller/internal/database"
 	"incident-teller/internal/domain"
 	"incident-teller/internal/observability"
+	"incident-teller/internal/ports"
 	"incident-teller/internal/services"
 )
 
@@ -109,10 +110,27 @@ func main() {
 	healthChecker.RegisterCheck("netdata", observability.NetdataHealthCheck(cfg.Netdata.BaseURL))
 	healthChecker.RegisterCheck("memory", observability.MemoryHealthCheck(80.0))
 
-	// Initialize Netdata client
-	netdataClient := netdata.NewClient(cfg.Netdata.BaseURL, cfg.Netdata.Hostname)
-	logger.Info("Netdata client initialized",
-		observability.String("url", cfg.Netdata.BaseURL))
+	// Initialize Netdata client (supports both local and cloud)
+	var netdataClient ports.AlertSource
+
+	if cfg.Netdata.CloudEnabled {
+		logger.Info("Using Netdata Cloud API",
+			observability.String("space", cfg.Netdata.CloudSpace))
+
+		netdataClient = netdata.NewCloudClient(
+			cfg.Netdata.CloudToken,
+			cfg.Netdata.CloudSpace,
+			cfg.Netdata.CloudRooms...,
+		)
+	} else {
+		logger.Info("Using Local Netdata API",
+			observability.String("url", cfg.Netdata.BaseURL))
+
+		netdataClient = netdata.NewClient(
+			cfg.Netdata.BaseURL,
+			cfg.Netdata.Hostname,
+		)
+	}
 
 	// Initialize AI model
 	var aiModel ai.AIModel

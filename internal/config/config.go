@@ -39,6 +39,12 @@ type NetdataConfig struct {
 	PollInterval time.Duration `yaml:"poll_interval" env:"POLL_INTERVAL" envDefault:"10s"`
 	Hostname     string        `yaml:"hostname" env:"HOSTNAME" envDefault:"localhost"`
 	BatchSize    int           `yaml:"batch_size" env:"BATCH_SIZE" envDefault:"100"`
+
+	// Cloud support configuration
+	CloudEnabled bool     `yaml:"cloud_enabled" env:"CLOUD_ENABLED" envDefault:"false"`
+	CloudToken   string   `yaml:"cloud_token" env:"CLOUD_TOKEN"`
+	CloudSpace   string   `yaml:"cloud_space" env:"CLOUD_SPACE"`
+	CloudRooms   []string `yaml:"cloud_rooms" env:"CLOUD_ROOMS"`
 }
 
 // AIConfig holds AI/ML configuration
