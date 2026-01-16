@@ -81,6 +81,19 @@ func (ai *LocalAIModel) PredictRootCause(ctx context.Context, alerts []domain.Al
 	// Select best candidate
 	bestCandidate, confidence := ai.selectBestCandidate(candidates, scores)
 
+	// Handle case where all alerts are resolved (no active candidates)
+	if bestCandidate == nil {
+		return RootCausePrediction{
+			PrimaryCause:      nil,
+			Confidence:        0.0,
+			AlternativeCauses: []*domain.Alert{},
+			Reasoning:         "All alerts are resolved - no active root cause detected",
+			PatternType:       ai.patternMatcher.IdentifyPattern(alerts, features),
+			MLFeatures:        features,
+			ModelVersion:      "1.0.0",
+		}, nil
+	}
+
 	// Generate reasoning
 	reasoning := ai.generateReasoning(bestCandidate, features, confidence)
 
