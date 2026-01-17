@@ -15,6 +15,7 @@ import (
 	"incident-teller/internal/adapters/netdata"
 	"incident-teller/internal/adapters/repository"
 	"incident-teller/internal/ai"
+	"incident-teller/internal/api"
 	"incident-teller/internal/config"
 	"incident-teller/internal/database"
 	"incident-teller/internal/domain"
@@ -178,27 +179,18 @@ func main() {
 		}()
 	}
 
-	// Start health check server
+	// Initialize API handlers
+	apiHandler := api.NewHandler(repo, aiModel, logger, healthChecker)
+
+	// Start API server
 	go func() {
-		healthAddr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
-		logger.Info("Starting health check server", observability.String("addr", healthAddr))
+		apiAddr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+		logger.Info("Starting API server", observability.String("addr", apiAddr))
 
-		http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-			health := healthChecker.CheckHealth(r.Context())
-			w.Header().Set("Content-Type", "application/json")
+		mux := apiHandler.SetupRoutes()
 
-			status := http.StatusOK
-			if health.Status != "healthy" {
-				status = http.StatusServiceUnavailable
-			}
-
-			w.WriteHeader(status)
-			fmt.Fprintf(w, `{"status":"%s","version":"%s","timestamp":"%s"}`,
-				health.Status, health.Version, health.Timestamp.Format(time.RFC3339))
-		})
-
-		if err := http.ListenAndServe(healthAddr, nil); err != nil {
-			logger.Error("Health server failed", observability.Error(err))
+		if err := http.ListenAndServe(apiAddr, mux); err != nil {
+			logger.Error("API server failed", observability.Error(err))
 		}
 	}()
 
