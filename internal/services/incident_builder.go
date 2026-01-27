@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"sort"
 	"time"
 
@@ -26,8 +27,12 @@ func (b *IncidentBuilder) Build(alerts []domain.Alert) []domain.Incident {
 	})
 
 	var incidents []domain.Incident
+	if len(alerts) == 0 {
+		return nil
+	}
+	
 	current := domain.Incident{
-		ID:        "incident-1",
+		ID:        fmt.Sprintf("incident-%s-%d", alerts[0].Host, alerts[0].OccurredAt.Unix()),
 		StartedAt: alerts[0].OccurredAt,
 		Status:    alerts[0].Status,
 	}
@@ -36,7 +41,7 @@ func (b *IncidentBuilder) Build(alerts []domain.Alert) []domain.Incident {
 		if alert.OccurredAt.Sub(current.StartedAt) > b.window {
 			incidents = append(incidents, current)
 			current = domain.Incident{
-				ID:        "incident-" + alert.ID,
+				ID:        fmt.Sprintf("incident-%s-%d", alert.Host, alert.OccurredAt.Unix()),
 				StartedAt: alert.OccurredAt,
 				Status:    alert.Status,
 			}

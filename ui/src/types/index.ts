@@ -60,6 +60,13 @@ export interface TimelineEventResponse {
   resourceType: string;
 }
 
+export interface TimelineResponse {
+  incidentId: string;
+  events: TimelineEventResponse[];
+  total: number;
+  duration: string;
+}
+
 export interface IncidentDetailResponse {
   id: string;
   title: string;
@@ -82,6 +89,7 @@ export interface IncidentListItemResponse {
   resolvedAt?: string;
   duration: string;
   rootCause: string;
+  host?: string;
   totalEvents: number;
   riskLevel: string;
 }

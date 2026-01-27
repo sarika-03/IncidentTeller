@@ -8,6 +8,7 @@ import {
   List,
   Clock,
   Activity,
+  Brain,
   Menu,
   X
 } from 'lucide-react';
@@ -18,6 +19,7 @@ const navigation = [
   { name: 'Incidents', href: '/incidents', icon: List },
   { name: 'Timeline', href: '/timeline', icon: Clock },
   { name: 'Health', href: '/health', icon: Activity },
+  { name: 'AI Analysis', href: '/analysis', icon: Brain },
 ];
 
 export default function Navigation() {

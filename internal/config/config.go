@@ -49,15 +49,27 @@ type NetdataConfig struct {
 
 // AIConfig holds AI/ML configuration
 type AIConfig struct {
-	Enabled             bool          `yaml:"enabled" env:"ENABLED" envDefault:"true"`
-	ModelType           string        `yaml:"model_type" env:"MODEL_TYPE" envDefault:"local"`
-	APIToken            string        `yaml:"api_token" env:"API_TOKEN"`
-	APIEndpoint         string        `yaml:"api_endpoint" env:"API_ENDPOINT"`
-	ConfidenceThreshold float64       `yaml:"confidence_threshold" env:"CONFIDENCE_THRESHOLD" envDefault:"0.7"`
-	MaxPredictions      int           `yaml:"max_predictions" env:"MAX_PREDICTIONS" envDefault:"5"`
-	PredictionTimeout   time.Duration `yaml:"prediction_timeout" env:"PREDICTION_TIMEOUT" envDefault:"10s"`
-	EnableLearning      bool          `yaml:"enable_learning" env:"ENABLE_LEARNING" envDefault:"false"`
-	ModelPath           string        `yaml:"model_path" env:"MODEL_PATH" envDefault:"./models"`
+	Enabled             bool               `yaml:"enabled" env:"ENABLED" envDefault:"true"`
+	ModelType           string             `yaml:"model_type" env:"MODEL_TYPE" envDefault:"local"`
+	APIToken            string             `yaml:"api_token" env:"API_TOKEN"`
+	APIEndpoint         string             `yaml:"api_endpoint" env:"API_ENDPOINT"`
+	ConfidenceThreshold float64            `yaml:"confidence_threshold" env:"CONFIDENCE_THRESHOLD" envDefault:"0.7"`
+	MaxPredictions      int                `yaml:"max_predictions" env:"MAX_PREDICTIONS" envDefault:"5"`
+	PredictionTimeout   time.Duration      `yaml:"prediction_timeout" env:"PREDICTION_TIMEOUT" envDefault:"10s"`
+	EnableLearning      bool               `yaml:"enable_learning" env:"ENABLE_LEARNING" envDefault:"false"`
+	ModelPath           string             `yaml:"model_path" env:"MODEL_PATH" envDefault:"./models"`
+	OpenAI              OpenAIConfig       `yaml:"openai"`
+}
+
+// OpenAIConfig holds OpenAI-specific configuration
+type OpenAIConfig struct {
+	Enabled     bool          `yaml:"enabled" env:"OPENAI_ENABLED" envDefault:"true"`
+	APIKey      string        `yaml:"api_key" env:"OPENAI_API_KEY"`
+	Model       string        `yaml:"model" env:"OPENAI_MODEL" envDefault:"gpt-4"`
+	Timeout     time.Duration `yaml:"timeout" env:"OPENAI_TIMEOUT" envDefault:"30s"`
+	MaxTokens   int           `yaml:"max_tokens" env:"OPENAI_MAX_TOKENS" envDefault:"2048"`
+	Temperature float32       `yaml:"temperature" env:"OPENAI_TEMPERATURE" envDefault:"0.7"`
+	TopP        float32       `yaml:"top_p" env:"OPENAI_TOP_P" envDefault:"1.0"`
 }
 
 // DatabaseConfig holds database configuration

@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'secondary' | 'destructive' | 'warning' | 'success';
+  variant?: 'default' | 'secondary' | 'destructive' | 'warning' | 'success' | 'outline';
   children: React.ReactNode;
 }
 
@@ -13,6 +13,7 @@ export const Badge: React.FC<BadgeProps> = ({ className, variant = 'default', ch
     destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/80',
     warning: 'bg-warning text-warning-foreground hover:bg-warning/80',
     success: 'bg-success text-success-foreground hover:bg-success/80',
+    outline: 'border border-border text-foreground',
   };
 
   return (

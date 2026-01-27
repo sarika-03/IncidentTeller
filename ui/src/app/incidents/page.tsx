@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import { AlertTriangle, CheckCircle, Clock, Cpu, HardDrive, Network, Activity } from 'lucide-react';
@@ -8,6 +10,7 @@ import { IncidentListResponse, IncidentListItemResponse } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 
 const getResourceIcon = (resourceType: string) => {
+  if (!resourceType) return AlertTriangle;
   switch (resourceType.toLowerCase()) {
     case 'cpu':
       return Cpu;
@@ -55,7 +58,7 @@ interface IncidentCardProps {
 }
 
 const IncidentCard: React.FC<IncidentCardProps> = ({ incident }) => {
-  const ResourceIcon = getResourceIcon(incident.rootCause);
+  const ResourceIcon = getResourceIcon(incident.rootCause || '');
 
   return (
     <Card className="hover:shadow-md transition-shadow cursor-pointer">
@@ -67,7 +70,7 @@ const IncidentCard: React.FC<IncidentCardProps> = ({ incident }) => {
                 <ResourceIcon className="h-4 w-4" />
               </div>
               <div>
-                <CardTitle className="text-lg">{incident.title}</CardTitle>
+                <CardTitle className="text-lg">{incident.title || `${incident.rootCause || 'Unknown'} Alert on ${incident.host || 'Unknown'}`}</CardTitle>
                 <p className="text-sm text-muted-foreground">{incident.rootCause} • {incident.host || 'Unknown'}</p>
               </div>
             </div>
@@ -81,15 +84,15 @@ const IncidentCard: React.FC<IncidentCardProps> = ({ incident }) => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <span className="text-muted-foreground">Started</span>
-              <p className="font-medium">{formatDistanceToNow(new Date(incident.startedAt), { addSuffix: true })}</p>
+              <p className="font-medium">{incident.startedAt && !isNaN(new Date(incident.startedAt).getTime()) ? formatDistanceToNow(new Date(incident.startedAt), { addSuffix: true }) : 'N/A'}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Duration</span>
-              <p className="font-medium">{incident.duration}</p>
+              <p className="font-medium">{incident.duration || 'N/A'}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Events</span>
-              <p className="font-medium">{incident.totalEvents}</p>
+              <p className="font-medium">{typeof incident.totalEvents === 'number' && !isNaN(incident.totalEvents) ? incident.totalEvents : 0}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Status</span>
@@ -135,7 +138,7 @@ export default function IncidentsPage() {
     const interval = setInterval(() => {
       fetchIncidents(page);
     }, 15000);
-    
+
     return () => clearInterval(interval);
   }, [page]);
 
@@ -181,10 +184,10 @@ export default function IncidentsPage() {
         <h1 className="text-3xl font-bold">Incidents</h1>
         <div className="flex items-center space-x-4">
           <Badge variant="secondary">
-            {incidents.total} Total Incidents
+            {typeof incidents.total === 'number' && !isNaN(incidents.total) ? incidents.total : 0} Total Incidents
           </Badge>
           <Badge variant="secondary">
-            Page {page} of {Math.ceil(incidents.total / incidents.pageSize)}
+            Page {page} of {(typeof incidents.pageSize === 'number' && !isNaN(incidents.pageSize) && incidents.pageSize > 0) ? Math.ceil(incidents.total / incidents.pageSize) : 1}
           </Badge>
         </div>
       </div>
@@ -195,7 +198,7 @@ export default function IncidentsPage() {
         ))}
       </div>
 
-      {incidents.total > incidents.pageSize && (
+      {(typeof incidents.total === 'number' && !isNaN(incidents.total) && typeof incidents.pageSize === 'number' && !isNaN(incidents.pageSize) && incidents.total > incidents.pageSize) && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
             Showing {((page - 1) * incidents.pageSize) + 1} to {Math.min(page * incidents.pageSize, incidents.total)} of {incidents.total} incidents

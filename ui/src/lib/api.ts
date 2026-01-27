@@ -3,6 +3,7 @@ import type {
   IncidentListResponse,
   IncidentDetailResponse,
   HealthResponse,
+  TimelineResponse,
   ErrorResponse,
 } from '@/types';
 
@@ -17,7 +18,7 @@ class ApiError extends Error {
 
 async function apiRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const defaultHeaders = {
     'Content-Type': 'application/json',
   };
@@ -32,7 +33,7 @@ async function apiRequest<T>(endpoint: string, options?: RequestInit): Promise<T
 
   try {
     const response = await fetch(url, config);
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(
@@ -69,6 +70,80 @@ export const api = {
   // Health
   async getHealth() {
     return apiRequest<HealthResponse>('/health');
+  },
+
+  // Timeline
+  async getTimeline(incidentId: string) {
+    return apiRequest<TimelineResponse>(`/timeline/${incidentId}`);
+  },
+
+  // Enhanced Timeline with cascade detection
+  async getEnhancedTimeline(incidentId: string) {
+    return apiRequest<any>(`/timeline-enhanced/${incidentId}`);
+  },
+
+  // AI Analysis
+  async getAIAnalysis() {
+    return apiRequest<any>('/analyze', { method: 'POST' });
+  },
+
+  // Alert Groups
+  async getAlertGroups() {
+    return apiRequest<any>('/alert-groups');
+  },
+
+  // Logs
+  async getLogs() {
+    return apiRequest<{ logs: string[]; count: number }>('/logs');
+  },
+
+  // Diagnostics
+  async getDiagnostics() {
+    return apiRequest<{ status: string; diagnostics: any[]; timestamp: string }>('/diagnostics');
+  },
+
+  // Metrics Export
+  async exportMetrics() {
+    const response = await fetch(`${API_BASE_URL}/metrics/export`);
+    if (!response.ok) throw new Error('Failed to export metrics');
+    return response.blob();
+  },
+
+  // SSE for real-time updates
+  subscribeToIncidents(onIncident: (incident: any) => void) {
+    const eventSource = new EventSource(`${API_BASE_URL}/events`);
+    let isConnected = false;
+    let hasErrored = false;
+    
+    eventSource.onopen = () => {
+      isConnected = true;
+      hasErrored = false;
+      console.log('SSE connected');
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const incident = JSON.parse(event.data);
+        onIncident(incident);
+      } catch (error) {
+        // Silently ignore parse errors for malformed SSE data
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      isConnected = false;
+      if (!hasErrored) {
+        hasErrored = true;
+        // Only log the first error to avoid spam
+        if (eventSource.readyState === EventSource.CLOSED) {
+          console.warn('SSE connection closed');
+        } else if (eventSource.readyState === EventSource.CONNECTING) {
+          // Connection is retrying, don't spam logs
+        }
+      }
+    };
+
+    return eventSource;
   },
 };
 

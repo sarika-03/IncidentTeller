@@ -1,12 +1,14 @@
+'use client';
+
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  ArrowLeft, 
-  AlertTriangle, 
-  Brain, 
-  Clock, 
-  Activity, 
+import {
+  ArrowLeft,
+  AlertTriangle,
+  Brain,
+  Clock,
+  Activity,
   Target,
   CheckCircle,
   XCircle,
@@ -93,7 +95,7 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({ event, isFirst }) => {
         <div className="flex items-center space-x-2 mb-1">
           <Badge variant="outline">{event.type}</Badge>
           <span className="text-sm text-muted-foreground">
-            {formatDistanceToNow(new Date(event.timestamp), { addSuffix: true })}
+            {event.timestamp && !isNaN(new Date(event.timestamp).getTime()) ? formatDistanceToNow(new Date(event.timestamp), { addSuffix: true }) : 'Unknown time'}
           </span>
           {event.durationSinceStart && (
             <span className="text-sm text-muted-foreground">
@@ -181,9 +183,9 @@ export default function IncidentDetailPage() {
           </button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">{incident.title}</h1>
+          <h1 className="text-3xl font-bold">{incident.title || `${incident.rootCause || 'Unknown'} Incident`}</h1>
           <p className="text-muted-foreground">
-            Started {formatDistanceToNow(new Date(incident.startedAt), { addSuffix: true })}
+            Started {incident.startedAt && !isNaN(new Date(incident.startedAt).getTime()) ? formatDistanceToNow(new Date(incident.startedAt), { addSuffix: true }) : 'Unknown time'}
           </p>
         </div>
         <div className="flex flex-col items-end space-y-2">
@@ -205,11 +207,11 @@ export default function IncidentDetailPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <span className="text-sm text-muted-foreground">Duration</span>
-                  <p className="font-medium">{incident.duration}</p>
+                  <p className="font-medium">{incident.duration || 'N/A'}</p>
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">Total Events</span>
-                  <p className="font-medium">{incident.totalEvents}</p>
+                  <p className="font-medium">{typeof incident.totalEvents === 'number' && !isNaN(incident.totalEvents) ? incident.totalEvents : 0}</p>
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">Risk Level</span>
@@ -235,13 +237,17 @@ export default function IncidentDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {incident.eventTimeline.map((event, index) => (
-                  <TimelineEvent 
-                    key={index} 
-                    event={event} 
-                    isFirst={index === 0}
-                  />
-                ))}
+                {incident.eventTimeline && incident.eventTimeline.length > 0 ? (
+                  incident.eventTimeline.map((event, index) => (
+                    <TimelineEvent
+                      key={index}
+                      event={event}
+                      isFirst={index === 0}
+                    />
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-sm">No timeline events available</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -272,13 +278,13 @@ export default function IncidentDetailPage() {
                     <span className="text-sm text-muted-foreground">Confidence</span>
                     <div className="flex items-center space-x-2">
                       <div className="flex-1 bg-secondary rounded-full h-2">
-                        <div 
-                          className="bg-primary h-2 rounded-full" 
-                          style={{ width: `${incident.rootCause.confidence * 100}%` }}
+                        <div
+                          className="bg-primary h-2 rounded-full"
+                          style={{ width: `${(incident.rootCause.confidence || 0) * 100}%` }}
                         ></div>
                       </div>
                       <span className="text-sm font-medium">
-                        {Math.round(incident.rootCause.confidence * 100)}%
+                        {Math.round((incident.rootCause.confidence || 0) * 100)}%
                       </span>
                     </div>
                   </div>
@@ -310,16 +316,15 @@ export default function IncidentDetailPage() {
                     <span className="text-sm text-muted-foreground">Impact Score</span>
                     <div className="flex items-center space-x-2">
                       <div className="flex-1 bg-secondary rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${
-                            incident.blastRadius.impactScore > 0.7 ? 'bg-destructive' :
+                        <div
+                          className={`h-2 rounded-full ${incident.blastRadius.impactScore > 0.7 ? 'bg-destructive' :
                             incident.blastRadius.impactScore > 0.4 ? 'bg-warning' : 'bg-success'
-                          }`}
-                          style={{ width: `${incident.blastRadius.impactScore * 100}%` }}
+                            }`}
+                          style={{ width: `${(incident.blastRadius.impactScore || 0) * 100}%` }}
                         ></div>
                       </div>
                       <span className="text-sm font-medium">
-                        {Math.round(incident.blastRadius.impactScore * 100)}%
+                        {Math.round((incident.blastRadius.impactScore || 0) * 100)}%
                       </span>
                     </div>
                   </div>
@@ -327,8 +332,8 @@ export default function IncidentDetailPage() {
                     <span className="text-sm text-muted-foreground">Risk Level</span>
                     <Badge variant={
                       incident.blastRadius.riskLevel === 'critical' ? 'destructive' :
-                      incident.blastRadius.riskLevel === 'high' ? 'destructive' :
-                      incident.blastRadius.riskLevel === 'medium' ? 'warning' : 'success'
+                        incident.blastRadius.riskLevel === 'high' ? 'destructive' :
+                          incident.blastRadius.riskLevel === 'medium' ? 'warning' : 'success'
                     }>
                       {incident.blastRadius.riskLevel}
                     </Badge>
@@ -337,26 +342,30 @@ export default function IncidentDetailPage() {
                     <span className="text-sm text-muted-foreground">Cascade Probability</span>
                     <div className="flex items-center space-x-2">
                       <div className="flex-1 bg-secondary rounded-full h-2">
-                        <div 
-                          className="bg-primary h-2 rounded-full" 
-                          style={{ width: `${incident.blastRadius.cascadeProbability * 100}%` }}
+                        <div
+                          className="bg-primary h-2 rounded-full"
+                          style={{ width: `${(incident.blastRadius.cascadeProbability || 0) * 100}%` }}
                         ></div>
                       </div>
                       <span className="text-sm font-medium">
-                        {Math.round(incident.blastRadius.cascadeProbability * 100)}%
+                        {Math.round((incident.blastRadius.cascadeProbability || 0) * 100)}%
                       </span>
                     </div>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Predicted Duration</span>
-                    <p className="font-medium">{incident.blastRadius.durationPredicted}</p>
+                    <p className="font-medium">{incident.blastRadius.durationPredicted || 'N/A'}</p>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Affected Services</span>
                     <div className="flex flex-wrap gap-1">
-                      {incident.blastRadius.affectedServices.map((service, index) => (
-                        <Badge key={index} variant="outline">{service}</Badge>
-                      ))}
+                      {incident.blastRadius.affectedServices && incident.blastRadius.affectedServices.length > 0 ? (
+                        incident.blastRadius.affectedServices.map((service, index) => (
+                          <Badge key={index} variant="outline">{service}</Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No affected services identified</span>
+                      )}
                     </div>
                   </div>
                   <div>

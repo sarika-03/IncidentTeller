@@ -12,6 +12,7 @@ const (
 	StatusClear     AlertStatus = "CLEAR"
 	StatusWarning   AlertStatus = "WARNING"
 	StatusCritical  AlertStatus = "CRITICAL"
+	StatusRemoved   AlertStatus = "REMOVED"
 )
 
 // ResourceType represents the category of system resource being monitored
@@ -28,41 +29,41 @@ const (
 
 // Alert represents a normalized event ingested from an external source (Netdata)
 type Alert struct {
-	ID           string      // Unique Event ID
-	ExternalID   uint64      // Netdata's unique_id
-	Host         string      // Hostname/node where alert originated
-	Chart        string      // e.g., "system.cpu"
-	Family       string      // e.g., "cpu"
-	Name         string      // e.g., "10min_cpu_usage"
-	Status       AlertStatus // Current status
-	OldStatus    AlertStatus // Previous status
-	Value        float64     // The metric value triggering the alert
-	OccurredAt   time.Time   // When the event happened
-	Description  string      // Raw description if available
+	ID           string       // Unique Event ID
+	ExternalID   uint64       // Netdata's unique_id
+	Host         string       // Hostname/node where alert originated
+	Chart        string       // e.g., "system.cpu"
+	Family       string       // e.g., "cpu"
+	Name         string       // e.g., "10min_cpu_usage"
+	Status       AlertStatus  // Current status
+	OldStatus    AlertStatus  // Previous status
+	Value        float64      // The metric value triggering the alert
+	OccurredAt   time.Time    // When the event happened
+	Description  string       // Raw description if available
 	ResourceType ResourceType // Classified resource type
 	Labels       map[string]string
 }
 
 // Incident represents a grouped collection of alerts related to a specific issue
 type Incident struct {
-	ID          string
-	Title       string      // e.g., "High CPU usage on system.cpu"
-	Status      AlertStatus // Current aggregate status
-	StartedAt   time.Time
-	ResolvedAt  *time.Time // Nil if active
-	Events      []Alert    // Ordered list of events in this incident
+	ID         string
+	Title      string      // e.g., "High CPU usage on system.cpu"
+	Status     AlertStatus // Current aggregate status
+	StartedAt  time.Time
+	ResolvedAt *time.Time // Nil if active
+	Events     []Alert    // Ordered list of events in this incident
 }
 
 // TimelineEntry is a human-readable representation of an event in the timeline
 type TimelineEntry struct {
 	Timestamp          time.Time
-	Type               string   // e.g., "TRIGGERED", "ESCALATED", "RESOLVED", "NOTE"
-	Message            string   // Human-readable description
-	Severity           string   // "info", "warning", "critical", "success"
+	Type               string         // e.g., "TRIGGERED", "ESCALATED", "RESOLVED", "NOTE"
+	Message            string         // Human-readable description
+	Severity           string         // "info", "warning", "critical", "success"
 	DurationSinceStart *time.Duration // Optional: How long into the incident this happened
-	CausedBy           []string // IDs of alerts that likely caused this event
-	RelatedAlertIDs    []string // All related alert IDs for this entry
-	ResourceType       ResourceType // Resource affected
+	CausedBy           []string       // IDs of alerts that likely caused this event
+	RelatedAlertIDs    []string       // All related alert IDs for this entry
+	ResourceType       ResourceType   // Resource affected
 }
 
 // ParsedNetdataResponse represents the raw JSON structure from Netdata (for reference in adapters)
@@ -94,4 +95,3 @@ type NetdataAlarmLogResponse struct {
 	Alarms              []NetdataAlarmLog `json:"alarms"`
 	LatestAlarmUniqueID uint64            `json:"latest_alarm_log_unique_id"`
 }
-

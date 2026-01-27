@@ -18,7 +18,6 @@ import (
 	"incident-teller/internal/api"
 	"incident-teller/internal/config"
 	"incident-teller/internal/database"
-	"incident-teller/internal/domain"
 	"incident-teller/internal/observability"
 	"incident-teller/internal/ports"
 	"incident-teller/internal/services"
@@ -58,12 +57,7 @@ func main() {
 
 	// Initialize database
 	var db *sql.DB
-	var repo interface {
-		SaveAlert(ctx context.Context, alert domain.Alert) error
-		GetIncidents(ctx context.Context) ([]domain.Incident, error)
-		GetLastProcessedID(ctx context.Context) (uint64, error)
-		SetLastProcessedID(ctx context.Context, id uint64) error
-	}
+	var repo api.Repository
 
 	switch cfg.Database.Type {
 	case "postgres", "postgresql":
@@ -180,7 +174,7 @@ func main() {
 	}
 
 	// Initialize API handlers
-	apiHandler := api.NewHandler(repo, aiModel, logger, healthChecker)
+	apiHandler := api.NewHandler(repo, aiModel, logger, healthChecker, metrics)
 
 	// Start API server
 	go func() {

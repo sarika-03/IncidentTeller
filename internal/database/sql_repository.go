@@ -474,3 +474,8 @@ func (r *SQLRepository) DeleteOldAlerts(ctx context.Context, olderThan time.Dura
 	_, err := r.db.ExecContext(ctx, query, time.Now().Add(-olderThan))
 	return err
 }
+
+// PingContext checks database connectivity
+func (r *SQLRepository) PingContext(ctx context.Context) error {
+	return r.db.PingContext(ctx)
+}

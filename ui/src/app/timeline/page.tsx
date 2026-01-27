@@ -1,9 +1,11 @@
+'use client';
+
 import React from 'react';
-import { 
-  Activity, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
   Pause,
   Play,
   RefreshCw
@@ -13,6 +15,20 @@ import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
 import { IncidentDetailResponse, IncidentListResponse } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
+
+const getResourceIcon = (resourceType: string) => {
+  if (!resourceType) return Activity; // Default icon if resourceType is missing
+  switch (resourceType.toLowerCase()) {
+    case 'service':
+      return Activity;
+    case 'database':
+      return Activity; // Placeholder, could be a database icon
+    case 'server':
+      return Activity; // Placeholder, could be a server icon
+    default:
+      return Activity;
+  }
+};
 
 const getTimelineIcon = (type: string) => {
   switch (type) {
@@ -86,12 +102,14 @@ export default function LiveTimelinePage() {
   const [incidents, setIncidents] = React.useState<IncidentListResponse | null>(null);
   const [detailedIncidents, setDetailedIncidents] = React.useState<Record<string, IncidentDetailResponse>>({});
   const [loading, setLoading] = React.useState(true);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [isPaused, setIsPaused] = React.useState(false);
   const [autoRefresh, setAutoRefresh] = React.useState(true);
   const [refreshInterval, setRefreshInterval] = React.useState(5000);
 
   const fetchAllIncidents = async () => {
+    setIsRefreshing(true);
     try {
       // Fetch incident list
       const incidentsData = await api.getIncidents(1, 50); // Get more incidents for timeline
@@ -113,6 +131,7 @@ export default function LiveTimelinePage() {
       setError(err instanceof Error ? err.message : 'Failed to fetch timeline data');
     } finally {
       setLoading(false);
+      setTimeout(() => setIsRefreshing(false), 500);
     }
   };
 
@@ -160,7 +179,7 @@ export default function LiveTimelinePage() {
   // Combine all timeline events from all incidents
   const allTimelineEvents: any[] = [];
   Object.entries(detailedIncidents).forEach(([incidentId, incident]) => {
-    incident.eventTimeline.forEach((event, index) => {
+    incident.eventTimeline?.forEach((event, index) => {
       allTimelineEvents.push({
         ...event,
         incidentId,
@@ -183,7 +202,7 @@ export default function LiveTimelinePage() {
             {autoRefresh ? 'Live' : 'Paused'}
           </Badge>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <select
             value={refreshInterval}
@@ -195,25 +214,25 @@ export default function LiveTimelinePage() {
             <option value={30000}>30s</option>
             <option value={60000}>1m</option>
           </select>
-          
+
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`px-3 py-1 rounded-md transition-colors flex items-center space-x-1 ${
-              autoRefresh 
-                ? 'bg-success text-success-foreground hover:bg-success/80' 
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-            }`}
+            className={`px-3 py-1 rounded-md transition-colors flex items-center space-x-1 ${autoRefresh
+              ? 'bg-success text-success-foreground hover:bg-success/80'
+              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+              }`}
           >
             {autoRefresh ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
             <span>{autoRefresh ? 'Pause' : 'Resume'}</span>
           </button>
-          
+
           <button
             onClick={fetchAllIncidents}
-            className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors flex items-center space-x-1"
+            disabled={isRefreshing}
+            className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors flex items-center space-x-1 disabled:opacity-50"
           >
-            <RefreshCw className="h-3 w-3" />
-            <span>Refresh</span>
+            <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
+            <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
           </button>
         </div>
       </div>
@@ -228,7 +247,7 @@ export default function LiveTimelinePage() {
             <div className="text-2xl font-bold">{incidents?.total || 0}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Timeline Events</CardTitle>
@@ -237,7 +256,7 @@ export default function LiveTimelinePage() {
             <div className="text-2xl font-bold">{allTimelineEvents.length}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Active Incidents</CardTitle>
@@ -248,14 +267,14 @@ export default function LiveTimelinePage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Last Update</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-sm font-mono">
-              {allTimelineEvents.length > 0 
+              {allTimelineEvents.length > 0
                 ? formatDistanceToNow(new Date(allTimelineEvents[0].timestamp), { addSuffix: true })
                 : 'No events'
               }
@@ -282,9 +301,9 @@ export default function LiveTimelinePage() {
           ) : (
             <div className="max-h-96 overflow-y-auto space-y-0">
               {allTimelineEvents.map((event, index) => (
-                <TimelineEvent 
-                  key={`${event.incidentId}-${index}`} 
-                  event={event} 
+                <TimelineEvent
+                  key={`${event.incidentId}-${index}`}
+                  event={event}
                   showIncidentTitle={event.isFirstInIncident}
                 />
               ))}

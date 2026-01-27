@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"runtime"
 	"time"
@@ -20,6 +21,7 @@ type Logger interface {
 	Fatal(msg string, fields ...Field)
 	With(fields ...Field) Logger
 	WithContext(ctx context.Context) Logger
+	GetLogs() []string
 }
 
 // Field represents a key-value pair for structured logging
@@ -30,8 +32,10 @@ type Field struct {
 
 // StandardLogger provides basic structured logging
 type StandardLogger struct {
-	level  LogLevel
-	fields []Field
+	level   LogLevel
+	fields  []Field
+	buffer  []string
+	maxSize int
 }
 
 // LogLevel represents logging level
@@ -62,8 +66,15 @@ func NewLogger(cfg config.ObservabilityConfig) Logger {
 	}
 
 	return &StandardLogger{
-		level: level,
+		level:   level,
+		buffer:  make([]string, 0),
+		maxSize: 100, // Keep last 100 logs
 	}
+}
+
+// GetLogs returns the buffered logs
+func (l *StandardLogger) GetLogs() []string {
+	return l.buffer
 }
 
 // Debug logs debug messages
@@ -152,6 +163,12 @@ func (l *StandardLogger) log(level, msg string, fields ...Field) {
 		if ok {
 			logMsg += fmt.Sprintf(" caller=\"%s:%d\"", file, line)
 		}
+	}
+
+	// Add to buffer
+	l.buffer = append(l.buffer, logMsg)
+	if len(l.buffer) > l.maxSize {
+		l.buffer = l.buffer[1:]
 	}
 
 	log.Println(logMsg)
@@ -340,8 +357,33 @@ func (hc *StandardHealthChecker) RegisterCheck(name string, check HealthCheck) {
 // DatabaseHealthCheck creates a database health check
 func DatabaseHealthCheck(db interface{}) HealthCheck {
 	return func(ctx context.Context) HealthCheckResult {
-		// This would be implemented based on the actual database interface
-		// For now, return a mock result
+		type pinger interface {
+			PingContext(context.Context) error
+		}
+
+		if p, ok := db.(pinger); ok {
+			if err := p.PingContext(ctx); err != nil {
+				return HealthCheckResult{
+					Status:  "unhealthy",
+					Message: fmt.Sprintf("Database ping failed: %v", err),
+					Details: map[string]interface{}{"error": err.Error()},
+				}
+			}
+		} else if db != nil {
+			// If it's not a direct sql.DB but some other interface we don't know
+			// we just report it as unknown but potentially OK if passed
+			return HealthCheckResult{
+				Status:  "healthy",
+				Message: "Database connection exists",
+				Details: map[string]interface{}{"type": "unknown_pinger"},
+			}
+		} else {
+			return HealthCheckResult{
+				Status:  "unhealthy",
+				Message: "Database connection is nil",
+			}
+		}
+
 		return HealthCheckResult{
 			Status:  "healthy",
 			Message: "Database connection OK",
@@ -355,8 +397,36 @@ func DatabaseHealthCheck(db interface{}) HealthCheck {
 // NetdataHealthCheck creates a Netdata health check
 func NetdataHealthCheck(baseURL string) HealthCheck {
 	return func(ctx context.Context) HealthCheckResult {
-		// This would actually ping the Netdata API
-		// For now, return a mock result
+		client := &http.Client{
+			Timeout: 5 * time.Second,
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/api/v1/info", nil)
+		if err != nil {
+			return HealthCheckResult{
+				Status:  "unhealthy",
+				Message: fmt.Sprintf("Failed to create request: %v", err),
+			}
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return HealthCheckResult{
+				Status:  "unhealthy",
+				Message: fmt.Sprintf("Netdata API unreachable: %v", err),
+				Details: map[string]interface{}{"url": baseURL, "error": err.Error()},
+			}
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return HealthCheckResult{
+				Status:  "unhealthy",
+				Message: fmt.Sprintf("Netdata API returned status %d", resp.StatusCode),
+				Details: map[string]interface{}{"url": baseURL, "status": resp.StatusCode},
+			}
+		}
+
 		return HealthCheckResult{
 			Status:  "healthy",
 			Message: "Netdata API reachable",

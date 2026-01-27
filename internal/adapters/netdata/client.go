@@ -124,12 +124,12 @@ func (c *Client) normalizeAlert(log domain.NetdataAlarmLog) domain.Alert {
 		Description:  log.Info,
 		ResourceType: resourceType,
 		Labels: map[string]string{
-			"source":      log.Source,
-			"units":       log.Units,
-			"exec":        log.Exec,
-			"recipient":   log.Recipient,
-			"alarm_id":    fmt.Sprintf("%d", log.AlarmID),
-			"event_id":    fmt.Sprintf("%d", log.EventID),
+			"source":    log.Source,
+			"units":     log.Units,
+			"exec":      log.Exec,
+			"recipient": log.Recipient,
+			"alarm_id":  fmt.Sprintf("%d", log.AlarmID),
+			"event_id":  fmt.Sprintf("%d", log.EventID),
 		},
 	}
 }
@@ -143,6 +143,8 @@ func mapStatus(status string) domain.AlertStatus {
 		return domain.StatusWarning
 	case "CRITICAL":
 		return domain.StatusCritical
+	case "REMOVED":
+		return domain.StatusRemoved
 	case "UNDEFINED":
 		return domain.StatusUndefined
 	default:
@@ -183,9 +185,9 @@ func classifyResourceType(chart, family string) domain.ResourceType {
 
 // contains is a helper to check if a string contains a substring
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		(s == substr || (len(s) > len(substr) && 
-		(stringContains(s, substr))))
+	return len(s) >= len(substr) &&
+		(s == substr || (len(s) > len(substr) &&
+			(stringContains(s, substr))))
 }
 
 func stringContains(s, substr string) bool {

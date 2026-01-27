@@ -113,7 +113,7 @@ func (r *InMemoryRepository) Clear() {
 }
 
 // Stats returns repository statistics
-func (r *InMemoryRepository) Stats() map[string]interface{} {
+func (r *InMemoryRepository) Stats(ctx context.Context) (map[string]interface{}, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -121,5 +121,10 @@ func (r *InMemoryRepository) Stats() map[string]interface{} {
 		"total_alerts":      len(r.alerts),
 		"total_incidents":   len(r.incidents),
 		"last_processed_id": r.lastProcessedID,
-	}
+	}, nil
+}
+
+// PingContext checks repository connectivity
+func (r *InMemoryRepository) PingContext(ctx context.Context) error {
+	return nil // In-memory repo is always available
 }
